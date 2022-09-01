@@ -72,19 +72,31 @@ Function.prototype.MyApply = function (obj = window, arr) {
 // -----------------------------------------------------------------------手写bind的实现
 
 Function.prototype.MyBind = function (obj) {
+    // 获取MyBind传入的参数
+    const args = Array.prototype.slice(arguments, 1)
     const self = this
     return function () {
-        self.call(obj)
+        self.call(obj,args)
     }
 }
 
 function testBind(a = 1, b = 2) {
-    console.log('this:', this);
+    console.log('this:', this.name);
     return a + b
 }
 
 const bindObj = { name: 'qing', age: 18 };
+const bindFun = testBind.MyBind(bindObj)
+bindFun()
 
-const res = testBind.MyBind(bindObj)
 
-console.dir(res)
+//函数柯里化
+function fn(x, y) {
+    return function (y) {
+        console.log(x + y);
+    };
+};
+var fn_ = fn(0);
+fn_(0); //2
+
+fn(1)(1) //2

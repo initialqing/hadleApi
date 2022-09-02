@@ -72,31 +72,41 @@ Function.prototype.MyApply = function (obj = window, arr) {
 // -----------------------------------------------------------------------手写bind的实现
 
 Function.prototype.MyBind = function (obj) {
-    // 获取MyBind传入的参数
-    const args = Array.prototype.slice(arguments, 1)
+    if (typeof this !== "function") {
+        throw new Error("Function.prototype.bind - what is trying to be bound is not callable");
+    };
+    // 获取MyBind传入的参数，这个类数组的第一位是this所以索引从1开始
+    const args = Array.prototype.slice.call(arguments, 1)
     const self = this
-    return function () {
-        self.call(obj,args)
+    const fn = function () {}
+    const bind = function () {
+        // 二次调的时候同样抓取参数
+        const params = Array.prototype.slice.call(arguments)
+        self.apply(this.constructor === self ? this : obj, args.concat(params))
     }
+    fn.prototype = self.prototype
+    bind.prototype = new fn()
+    return bind
 }
 
-function testBind(a = 1, b = 2) {
+
+function testBind(a, b) {
     console.log('this:', this.name);
+    // console.log(a+b)
     return a + b
 }
 
 const bindObj = { name: 'qing', age: 18 };
-const bindFun = testBind.MyBind(bindObj)
-bindFun()
+const bindFun = testBind.MyBind(bindObj, 1)
+console.log(bindFun({ name: 'change' }, 2));
 
 
-//函数柯里化
+//函数柯里化，函数调用的时候先传递一部分参数进行调用，函数返回新函数再处理剩下的参数
 function fn(x, y) {
     return function (y) {
         console.log(x + y);
     };
 };
-var fn_ = fn(0);
-fn_(0); //2
-
-fn(1)(1) //2
+var fn_ = fn(0); // 先传递一个x参数
+fn_(1); // 2 此时返回了一个新的fn_函数，在传入一个参数y处理剩余的参数
+fn(1)(1) // 2

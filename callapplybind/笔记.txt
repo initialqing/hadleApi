@@ -1,0 +1,72 @@
+//函数柯里化，函数调用的时候先传递一部分参数进行调用，函数返回新函数再处理剩下的参数
+function fn(x, y) {
+    return function (y) {
+        console.log(x + y);
+    };
+};
+var fn_ = fn(0); // 先传递一个x参数
+fn_(1); // 2 此时返回了一个新的fn_函数，在传入一个参数y处理剩余的参数
+fn(1)(1) // 2
+
+
+版本一：实现了改变this指向的功能
+Function.prototype.MyBind = function (obj) {
+    const self = this
+    return function () {
+        self.call(obj)
+    }
+}
+
+function testBind(a = 1, b = 2) {
+    console.log('this:', this.name);
+    return a + b
+}
+
+const bindObj = { name: 'qing', age: 18 };
+const bindFun = testBind.MyBind(bindObj)
+bindFun()
+
+版本二：实现可以向函数中传入参数的功能
+
+Function.prototype.MyBind = function (obj) {
+    // 获取MyBind传入的参数，这个类数组的第一位是this所以索引从1开始
+    const args = Array.prototype.slice.call(arguments, 1)
+    const self = this
+    return function () {
+        // 二次调的时候同样抓取参数
+        const params = Array.prototype.slice.call(arguments)
+        return self.apply(obj, args.concat(params))
+    }
+}
+
+function testBind(a, b) {
+    console.log('this:', this.name);
+    console.log(a+b)
+    return a + b
+}
+
+const bindObj = { name: 'qing', age: 18 };
+const bindFun = testBind.MyBind(bindObj,1)
+// 这边加了一个对象的话会出现错误，因为调用返回的bind函数在取参数的时候把arguments和之前的参数都合并了，arguments第一项为这个对象。
+console.log(bindFun({name:'change'},2));
+
+
+版本三：实现构造函数的功能，构造函数会忽略已经绑定的this，如果是new调用，函数中的this指向实例自身
+Function.prototype.MyBind = function (obj) {
+    if (typeof this !== "function") {
+        throw new Error("Function.prototype.bind - what is trying to be bound is not callable");
+    };
+    // 获取MyBind传入的参数，这个类数组的第一位是this所以索引从1开始
+    const args = Array.prototype.slice.call(arguments, 1)
+    const self = this
+    const fn = function () {}
+    const bind = function () {
+        // 二次调的时候同样抓取参数
+        const params = Array.prototype.slice.call(arguments)
+        self.apply(this.constructor === self ? this : obj, args.concat(params))
+    }
+    // 添加一层空白函数作为中介。
+    fn.prototype = self.prototype
+    bind.prototype = new fn()
+    return bind
+}
